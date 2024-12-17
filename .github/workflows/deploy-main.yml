@@ -1,0 +1,33 @@
+name: Deploy to FTP
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Update VERSION.txt
+      run: |
+        echo "Commit: $GITHUB_SHA" > VERSION.txt
+        echo "Branch: $GITHUB_REF" >> VERSION.txt
+    - name: Upload files via FTP
+      uses: SamKirkland/FTP-Deploy-Action@4.0.0
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        port: ${{ secrets.FTP_PORT }}
+        local-dir: ./
+        server-dir: ${{ secrets.DEPLOY_DIRECTORY }}
+    - name: Commit changes to VERSION.txt
+      run: |
+        git config --local user.name "github-actions"
+        git config --local user.email "actions@github.com"
+        git add VERSION.txt
+        git commit -m "Update VERSION.txt to commit $GITHUB_SHA [skip ci]"
+        git push origin main
+      env:
+        GITHUBTOKEN: ${{ secrets.GITHUBTOKEN }}
